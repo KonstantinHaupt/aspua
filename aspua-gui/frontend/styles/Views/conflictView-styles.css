@@ -1,0 +1,7 @@
+/*  CSS class for conflictView-layout */
+.conflictView-centered-content {
+    margin: 0 auto;
+    max-width: 95%;
+    /* max-height: 95%; */
+    padding-bottom: 2%;
+  }

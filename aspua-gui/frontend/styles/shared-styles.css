@@ -1,0 +1,32 @@
+/* CSS class for general layout (mainLayout) */
+
+vaadin-tab {
+  font-size: var(--lumo-font-size-l);
+}
+
+.centered-content {
+  margin: 0 auto;
+  max-width: 80%;
+  padding-bottom: 2%;
+  /* max-height: 95%; */
+}
+
+a[highlight] {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.header {
+  padding: 0 var(--lumo-space-m);
+}
+
+.header h1.logo {
+  font-size: 1.5em;
+  margin: var(--lumo-space-m);
+}
+
+.small-size {
+  width: var(--lumo-size-s);
+  height: var(--lumo-size-s);
+  font-size: var(--lumo-font-size-s);
+}

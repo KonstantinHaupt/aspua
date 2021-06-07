@@ -1,0 +1,4 @@
+/* Use own class for local scoping of vaadin-dialog-overlay element */
+[part="content"] {
+    padding: 0;
+}

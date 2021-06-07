@@ -1,0 +1,3 @@
+atzmab :- treat, tnbc_met, pdl_pos, not visc_crisis.
+-mono_th :- treat, tnbc_met, nab_pt, atzmab.
+-low_success :- treat, tnbc_met, atzmab, -mono_th.

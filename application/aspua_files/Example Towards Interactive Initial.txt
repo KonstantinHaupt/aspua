@@ -1,0 +1,8 @@
+tnbc_met.
+pdl_pos.
+treat.
+mono_th :- treat, tnbc_met, not visc_crisis.
+-mono_th :- treat, tnbc_met, visc_crisis.
+nab_pt :- treat, tnbc_met.
+carbopl :- treat, tnbc_met, visc_crisis.
+low_success :- treat, tnbc_met.

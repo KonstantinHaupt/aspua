@@ -1,0 +1,11 @@
+/*  CSS class for updateView-layout */
+.updateView-centered-content {
+    margin: 0 auto;
+    max-width: 90%;
+    /* max-height: 95%; */
+    padding-bottom: 2%;
+  }
+
+h4 {
+  margin: 8px;
+}

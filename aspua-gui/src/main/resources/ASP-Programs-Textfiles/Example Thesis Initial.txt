@@ -1,0 +1,7 @@
+a(t).
+b(u, v).
+c :- a(t), not e.
+c :- b(u, v).
+d :- b(u, v), not f, not g.
+d :- c, not -f.
+p :- c, d, not -b(u, v), not e, not g.

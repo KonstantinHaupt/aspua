@@ -1,0 +1,11 @@
+/* CSS class for row-colors of operations */
+[part~="cell"].add {
+    background: hsla(145, 100%, 76%, 0.55);
+ }
+[part~="cell"].modify {
+    background-color: hsla(61, 100%, 74%, 0.5);
+}
+
+[part~="cell"].delete {
+    background-color: hsla(3, 100%, 84%, 0.5);
+}

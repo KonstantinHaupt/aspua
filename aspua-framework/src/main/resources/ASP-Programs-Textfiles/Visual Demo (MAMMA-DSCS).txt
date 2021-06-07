@@ -1,0 +1,636 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%                      !!! TEST RULESET FOR ASPUA-GUI !!!                     %%%
+%%%                      !!! NOT SUITABLE FOR PRODUCTION !!!                    %%%
+%%%                             Contains 340 Rules                              %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% For parsing: Ensure that suitable regular expressions are chosen in the de.aspua.framework.Utils.Constants-class
+
+
+
+%%%
+%%% MAMMA-DSCS - HEX-program
+%%%
+
+%%% Abbreviations taken from http://www.medilexicon.com/
+%%% GMC - general medical condition
+%%% CC - comorbidity / complication
+%%% LND - lymph node
+%%% TH - Therapy
+%%% (CT - chemotherapy)
+%%% AHT - anti-hormonal therapy
+%%% AbT - antibody therapy
+%%% PTX - Paclitaxel
+%%% TMX - Tamoxifen
+%%% ANT - anthracyclines
+%%% ADJ - adjuvant
+%%% NA - neoadjuvant
+
+%%%
+%%% available patient properties
+%%% atoms can be set via external patient-file 
+%%% parameter as string because of classical negation (-ci) 
+%%%
+patientProperty("her").
+patientProperty("epr").
+patientProperty("schedule").
+patientProperty("nodal").
+patientProperty("gmc").
+patientProperty("age").
+patientProperty("tumorSize").
+patientProperty("brca").
+patientProperty("ci").
+patientProperty("-ci").
+patientProperty("existingCC").
+patientProperty("gender").
+patientProperty("risk").
+patientProperty("lndCount").
+patientProperty("lobular").
+patientProperty("menopausal").
+
+%%%
+%%% read patient data from file %%%
+%%%
+patientPropertyAvailable(VALUE) :- &availablePatientProperty[patientProperty](VALUE).
+patientPropertyValue(KEY, VALUE) :- &getPatientProperty[patientProperty](KEY, VALUE).
+
+
+%%% get patient data (problem instance) from file
+%%% transform to proper atoms 
+%%% usage of patientPropertyValue-atoms is more generic, but code would get harder to read
+her(X) :- patientPropertyAvailable("her"), patientPropertyValue("her", X).
+epr(X) :- patientPropertyAvailable("epr"), patientPropertyValue("epr", X).
+schedule(X) :- patientPropertyAvailable("schedule"), patientPropertyValue("schedule", X).
+nodal(X) :- patientPropertyAvailable("nodal"), patientPropertyValue("nodal", X).
+gmc(X) :- patientPropertyAvailable("gmc"), patientPropertyValue("gmc", X).
+age(X) :- patientPropertyAvailable("age"), patientPropertyValue("age", X).
+tumorSize(X) :- patientPropertyAvailable("tumorSize"), patientPropertyValue("tumorSize", X).
+brca(X) :- patientPropertyAvailable("brca"), patientPropertyValue("brca", X).
+ci(X) :- patientPropertyAvailable("ci"), patientPropertyValue("ci", X).
+-ci(X) :- patientPropertyAvailable("-ci"), patientPropertyValue("-ci", X).
+existingCC(X) :- patientPropertyAvailable("existingCC"), patientPropertyValue("existingCC", X).
+gender(X) :- patientPropertyAvailable("gender"), patientPropertyValue("gender", X).
+risk(X) :- patientPropertyAvailable("risk"), patientPropertyValue("risk", X).
+lndCount(X) :- patientPropertyAvailable("lndCount"), patientPropertyValue("lndCount", X).
+lobular(X) :- patientPropertyAvailable("lobular"), patientPropertyValue("lobular", X).
+menopausal(X) :- patientPropertyAvailable("menopausal"), patientPropertyValue("menopausal", X).
+
+
+%%%
+%%% validation
+%%%
+%% missingData(gender) :- not male, not female.
+missingData(her) :- not her(pos), not her(neg).
+missingData(epr) :- not epr(pos), not epr(neg).
+missingData(age) :- not age(_).
+missingData(schedule) :- not schedule(adj), not schedule(neoAdj).
+missingData(nodal) :- not nodal(neg), not nodal(pos).
+missingData(ant) :- not ci(ant),  not -ci(ant).
+
+validPatientData :- not missingData(_), validAge, not -validTumorSize, not -validLNDCount.
+
+validLNDCount :- lndCount(C), #int(C).
+-validLNDCount :- not validLNDCount, lndCount(_).
+
+%% there seems to be a bug with integer values over 200, when the value is imported by the plugin. #int(S) = 0 when S > 200
+validTumorSize :- tumorSize(S). %%, #int(S).
+-validTumorSize :- not validTumorSize, tumorSize(_).
+validAge :- age(A), #int(A).
+
+
+%%%
+%%% (classically) negate other possible options of a given patient property  
+%%%
+possibleValues(gmc, good).
+possibleValues(gmc, average).
+possibleValues(gmc, bad).
+possibleValues(risk, high).
+possibleValues(risk, low).
+possibleValues(lobular, invasive).
+possibleValues(lobular, nonInvasive).
+possibleValues(brca, pos).
+possibleValues(brca, neg).
+possibleValues(menopausal, post).
+possibleValues(menopausal, pre).
+
+% -gmc(Y) :- gmc(X), possibleValues(gmc, Y), X <> Y.
+% -risk(Y) :- risk(X), possibleValues(risk, Y), X <> Y.
+% -lobular(Y) :- lobular(X), possibleValues(lobular, Y), X <> Y.
+
+-gmc(Y) :- gmc(X), possibleValues(gmc, Y).
+-risk(Y) :- risk(X), possibleValues(risk, Y).
+-lobular(Y) :- lobular(X), possibleValues(lobular, Y).
+
+%%%
+%%% auxiliary predicates %%%
+%%%
+% lndCount4to9 :- lndCount(C), C >= 4, C <= 9.
+% -lndCount4to9 :- not lndCount4to9, lndCount(_).
+
+lndCount4to9 :- lndCount(C).
+-lndCount4to9 :- not lndCount4to9, lndCount(_).
+
+brcaTestAvailable :- brca(_).
+
+% tumorSizeGreaterThan100 :- tumorSize(S), S > 100.
+% tumorSizeGreaterThan200 :- tumorSize(S), S > 200.
+% tumorSizeLowerThan100 :- tumorSize(S), S < 100.
+% tumorSizeLowerThan200 :- tumorSize(S), S < 200.
+% -tumorSizeLowerThan100 :- tumorSize(S), S > 100.
+% -tumorSizeLowerThan200 :- tumorSize(S), S > 200.
+% -tumorSizeGreaterThan100 :- tumorSize(S), S < 100.
+% -tumorSizeGreaterThan200 :- tumorSize(S), S < 200.
+
+tumorSizeGreaterThan100 :- tumorSize(S).
+tumorSizeGreaterThan200 :- tumorSize(S).
+tumorSizeLowerThan100 :- tumorSize(S).
+tumorSizeLowerThan200 :- tumorSize(S).
+-tumorSizeLowerThan100 :- tumorSize(S).
+-tumorSizeLowerThan200 :- tumorSize(S).
+-tumorSizeGreaterThan100 :- tumorSize(S).
+-tumorSizeGreaterThan200 :- tumorSize(S).
+
+-brca(neg):- brca(pos).
+-brca(pos):- brca(neg).
+
+preMenopausal :- menopausal(pre).
+postMenopausal :- menopausal(post).
+
+% ageHigher70 :- age(X), X >= 70, #int(X).
+% ageLower70 :- age(X), X < 70, #int(X).
+% age50to70 :- age(X), X >= 50, X <= 70, #int(X).
+% ageLower50 :- age(X), X < 50, #int(X).
+
+ageHigher70 :- age(X), #int(X).
+ageLower70 :- age(X), #int(X).
+age50to70 :- age(X), #int(X).
+ageLower50 :- age(X), #int(X).
+
+female :- gender(female).
+male :- gender(male).
+
+gender(female) :- not gender(_).
+
+%%%
+%%% general rules %%%
+%%%
+:- female, male.
+
+-postMenopausal :- preMenopausal.
+-preMenopausal :- postMenopausal.
+postMenopausal :- ageHigher70, female, not -postMenopausal.
+preMenopausal :- not ageHigher70, not -preMenopausal, female.
+:- postMenopausal, preMenopausal.
+
+:- nodal(neg), nodal(pos).
+
+:- epr(pos), epr(neg).
+
+:- schedule(neoAdj), schedule(adj).
+
+ccKnown :- existingCC(_).
+
+noFurtherRFs :- risk(low).
+-noFurtherRFs :- risk(_), not noFurtherRFs.
+
+adjCTPossible :- schedule(adj).
+naCTPossible :- schedule(neoAdj).
+
+%%%
+%%% possible therapy forms (does not cover all expressions - her and epr still needed in some rules)
+%%%
+ctApplicative :- her(pos).
+ctApplicative :- her(neg), epr(pos).
+ctApplicative :- her(neg), epr(neg).
+
+ctPossible :- ctApplicative, not ci(ct), not skipCT, validPatientData.
+
+ahtPossible :- epr(pos), validPatientData, not gender(male).
+
+% AHT although epr negative. Could be mistake in mindmap data -> exceptional path!
+ahtPossibleTripleNeg :- epr(neg), her(neg), naCTPossible, ci(ant), nodal(pos), commendedCT("TCarbo"), not gender(male).
+
+opPossible :- ctPossible, not schedule(adj), not ci(op), validPatientData.
+
+abtPossible :- her(pos), ctPossible, validPatientData.
+
+%%%
+%%% organ systems
+%%%
+organSystem(cardiovascular).
+organSystem(bonemarrow).
+organSystem(urogenital).
+organSystem(gastrointestinal).
+organSystem(dermatological).
+organSystem(mucosal).
+organSystem(neurological).
+organSystem(renal).
+
+%%%
+%%% th schemes
+%%%
+ctScheme("T").
+ctScheme("EC_T").
+ctScheme("EC_TCarbo").
+ctScheme("EC90_600").
+ctScheme("FEC").
+ctScheme("TCarbo").
+ctScheme("TH8_8").
+ctScheme("TH8_6").
+ctScheme("TCH").
+ctScheme("TCyclo").
+ctScheme("TAC").
+ctScheme("ETC").
+ctScheme("PertuTCH").
+ctScheme("PertuHT").
+ctScheme("EC_PertuHT").
+
+%%%
+%%% scheme suggestions 
+%%%
+possibleCTScheme("EC_T") :- ctPossible, nodal(neg), ageLower70, not -gmc(good). %%% offLabelButConfirm but her(neg): ptxOffLabelUsageClearingRequired
+possibleCTScheme("EC_T") :- ctPossible, naCTPossible, ageHigher70.  %% EFE offLabelButConfirm her(neg): ptxOffLabelUsageClearingRequired
+possibleCTScheme("EC_T") :- ctPossible, naCTPossible, not -gmc(bad).  %%% offLabelButConfirm her(neg): ptxOffLabelUsageClearingRequired
+possibleCTScheme("EC_T") :- ctPossible, adjCTPossible, nodal(pos), ageLower50, not -gmc(average). %%%
+possibleCTScheme("EC_T") :- ctPossible, adjCTPossible, nodal(pos), ageLower50, not -ccKnown. %%%
+possibleCTScheme("EC_T") :- ctPossible, naCTPossible, nodal(pos), ageLower50, her(neg). %%%
+possibleCTScheme("EC_T") :- ctPossible, adjCTPossible, nodal(pos), age50to70, not -gmc(good). %%%
+possibleCTScheme("EC_T") :- ctPossible, naCTPossible, nodal(pos), ageLower70, not -gmc(good). %%% Mindmap was not clear on that, see rule above.
+possibleCTScheme("EC_T") :- ctPossible, adjCTPossible, nodal(pos), ageHigher70. %%% EFE
+possibleCTScheme("EC_T") :- ctPossible, naCTPossible, not -brcaTestAvailable, not -brca(neg), her(neg), epr(neg). %%%
+
+possibleCTScheme("EC_TCarbo") :- ctPossible, naCTPossible, not -brcaTestAvailable, not -brca(pos), her(neg), epr(neg). %%% cptClearingRequired
+possibleCTScheme("EC90_600") :- ctPossible, adjCTPossible, nodal(neg), ageHigher70. %%% EFE
+
+possibleCTScheme("ETC") :- ctPossible, adjCTPossible, nodal(pos), ageLower50, not -gmc(good), not -lndCount4to9. %%%
+
+possibleCTScheme("TAC") :- ctPossible, adjCTPossible, nodal(pos), ageLower50, not -gmc(good), not lndCount4to9. %%%
+possibleCTScheme("TAC") :- ctPossible, naCTPossible, nodal(pos), ageLower50. %%%
+
+possibleCTScheme("FEC") :- ctPossible, ageHigher70.  %%% EFE
+possibleCTScheme("FEC") :- ctPossible, naCTPossible, not -gmc(bad). %%%
+possibleCTScheme("FEC") :- ctPossible, adjCTPossible, ageLower70, not -gmc(good). %%%
+
+possibleCTScheme("PertuHT") :- ctPossible, naCTPossible, nodal(neg), not -tumorSizeGreaterThan100, not -tumorSizeLowerThan200, her(pos). %%% epr neg ptxOffLabelUsage
+possibleCTScheme("PertuHT") :- ctPossible, naCTPossible, nodal(neg), not -tumorSizeGreaterThan200, not -noFurtherRFs, her(pos). %%% epr neg ptxOffLabelUsage
+possibleCTScheme("PertuHT") :- ctPossible, naCTPossible, nodal(pos), ageHigher70, ci(ant), epr(neg), her(pos), not -risk(high). %%% ptxOffLabelUsage
+possibleCTScheme("PertuHT") :- ctPossible, naCTPossible, nodal(pos), not -gmc(bad), ci(ant), epr(neg), her(pos), not -risk(high). %%% ptxOffLabelUsage
+
+possibleCTScheme("EC_PertuHT") :- ctPossible, naCTPossible, nodal(pos), ageLower50, her(pos). %%%
+
+possibleCTScheme("PertuTCH") :- ctPossible, naCTPossible, nodal(pos), ageLower70, not -gmc(good), ci(ant), her(pos), epr(neg). %%
+possibleCTScheme("PertuTCH") :- ctPossible, naCTPossible, nodal(pos), ageLower50, ci(ant), her(pos), epr(neg). %%
+possibleCTScheme("PertuTCH") :- ctPossible, naCTPossible, nodal(pos), ci(ant), her(pos), epr(pos). %%
+
+possibleCTScheme("TCyclo") :- ctPossible, adjCTPossible, nodal(neg), ageHigher70, epr(neg), her(neg). %%
+possibleCTScheme("TCyclo") :- ctPossible, adjCTPossible, nodal(neg), ageHigher70, ci(ant). %%
+possibleCTScheme("TCyclo") :- ctPossible, adjCTPossible, nodal(neg), ageHigher70, not -risk(high). %%
+possibleCTScheme("TCyclo") :- ctPossible, adjCTPossible, nodal(neg), ageLower70, not -gmc(average). %%
+possibleCTScheme("TCyclo") :- ctPossible, adjCTPossible, nodal(neg), ageLower70, not -ccKnown. %%
+possibleCTScheme("TCyclo") :- ctPossible, adjCTPossible, nodal(pos), age50to70, her(neg). %%
+possibleCTScheme("TCyclo") :- ctPossible, adjCTPossible, nodal(neg), ageLower70, ci(ant), her(pos), epr(neg). %%
+
+possibleCTScheme("TCH") :- ctPossible, adjCTPossible, nodal(neg), ageLower70, not -gmc(average), her(pos), ci(ant). %% offlabel
+possibleCTScheme("TCH") :- ctPossible, adjCTPossible, nodal(neg), ageLower70, not -ccKnown, her(pos), ci(ant). %% offlabel
+possibleCTScheme("TCH") :- ctPossible, adjCTPossible, nodal(neg), ageLower70, ci(ant), her(pos), epr(neg). %% offlabel
+possibleCTScheme("TCH") :- ctPossible, adjCTPossible, nodal(pos), age50to70, ci(ant), her(pos). %% cptOffLabelListed
+possibleCTScheme("TCH") :- ctPossible, adjCTPossible, nodal(pos), ageLower50, not -gmc(average), ci(ant), her(pos). %% epr pos cptOffLabelListed
+possibleCTScheme("TCH") :- ctPossible, adjCTPossible, nodal(pos), ageLower50, not -ccKnown, ci(ant), her(pos). %% epr pos cptOffLabelListed
+possibleCTScheme("TCH") :- ctPossible, naCTPossible, nodal(pos), ageLower50, ci(ant), her(pos), epr(neg). %% Mindmap wasn't clear about ci(ant) epr pos cptOffLabelListed
+possibleCTScheme("TCH") :- ctPossible, naCTPossible, nodal(pos), ageLower70, not -gmc(good), ci(ant), her(pos), epr(neg). %% cptClearingRequiredListed
+possibleCTScheme("TCH") :- ctPossible, naCTPossible, nodal(pos), ci(ant), her(pos), epr(pos). %% cptClearingRequiredListed
+
+possibleCTScheme("TH8_6") :- ctPossible, adjCTPossible, nodal(neg), not -tumorSizeLowerThan100, her(pos). %%
+possibleCTScheme("TH8_6") :- ctPossible, adjCTPossible, nodal(neg), not -tumorSizeLowerThan200, not -noFurtherRFs, her(pos). %%
+
+possibleCTScheme("TH8_8")  :- ctPossible, naCTPossible, nodal(neg), not -tumorSizeGreaterThan100, not -tumorSizeLowerThan200, her(pos). %% epr neg offLabel
+possibleCTScheme("TH8_8")  :- ctPossible, naCTPossible, nodal(neg), not -tumorSizeGreaterThan200, not -noFurtherRFs, her(pos). %% epr neg offLabel
+possibleCTScheme("TH8_8") :- ctPossible, naCTPossible, nodal(neg), not -gmc(bad), ci(ant), epr(neg), her(pos). %% offLabel
+possibleCTScheme("TH8_8") :- ctPossible, naCTPossible, nodal(neg), ageHigher70, ci(ant), epr(neg), her(pos). %% offLabel
+
+
+possibleCTScheme("T") :- ctPossible, nodal(neg), not -tumorSizeLowerThan100, her(neg). %% epr pos nadj offLabelListedClearingRequired epr pos adj cptClearingRequired epr neg cptClearingRequired
+possibleCTScheme("T") :- ctPossible, nodal(neg), not -tumorSizeLowerThan200, not -noFurtherRFs, her(neg). %%
+
+possibleCTScheme("TCarbo") :- ctPossible, naCTPossible, nodal(pos), ci(ant), her(neg).  %%
+
+adjCTPossible :- ctPossible, naCTPossible, nodal(pos), ageHigher70, ci(ant), epr(neg), her(pos).
+adjCTPossible :- ctPossible, naCTPossible, nodal(pos), not -gmc(bad), ci(ant), epr(neg), her(pos).
+
+
+%%%
+%%% skipCT definition
+%%%
+skipCTPossible :- ctApplicative, adjCTPossible, nodal(neg), not -risk(low), epr(pos).
+skipCTPossible :- ctApplicative, adjCTPossible, nodal(neg), not -ci(ct), epr(pos).
+skipCT :- ctApplicative, adjCTPossible, nodal(neg), ci(ct), epr(pos).
+
+% skipCT v ctPossible :- skipCTPossible, ctApplicative.
+skipCT :- skipCTPossible, ctApplicative.
+ctPossible :- skipCTPossible, ctApplicative.
+
+%%%
+%%% antibody therapy schemes
+%%%
+abt("H8_6").
+abt("H6").
+abt("PertuH").
+
+%%%
+%%% antibody therapy commendations
+%%%
+
+%%% can be replaced by rule with external atom e.g. &hasTrastu[commendedCT](T)
+
+hasTrastu("TH8_6").
+hasTrastu("TH8_8").
+hasTrastu("TCH").
+hasTrastu("PertuTCH").
+hasTrastu("PertuHT").
+hasTrastu("EC_PertuHT").
+
+
+commendedAbT("H6") :- abtCommended, commendedCT(TH), hasTrastu(TH).
+
+commendedAbT("H8_6") :- abtCommended, commendedCT(TH), not hasTrastu(TH).
+
+commendedAbTPreOP("PertuH") :- abtCommended, her(pos), commendedCT("EC_T"), naCTPossible, nodal(pos).
+commendedAbTPreOP("H8_6") :- abtCommended, naCTPossible, not commendedAbTPreOP("PertuH"), commendedCT("EC_T").
+
+%%%
+%%% anti-hormonal therapy schemes
+%%%
+aht("TMX10").
+aht("AI5_TMX5").
+aht("AI5CLO3_TMX5").
+aht("TMX2_AI2_TMX").
+aht("AI5_EFE").
+
+aht("TMX").
+aht("TMX_AI").
+aht("TMX_AI_TMX").
+aht("AI").
+aht("AI_TMX").
+
+%%%
+%%% anti-hormonal therapy commendations
+%%%
+possibleAHT("TMX2_AI2_TMX") :- ahtPossible, nodal(neg), not -postMenopausal, not -lobular(nonInvasive), not ci(tmx).
+possibleAHT("AI5_EFE") :- ahtPossible, nodal(neg), not -postMenopausal, not -lobular(nonInvasive), not -ci(tmx).
+
+possibleAHT("AI5_TMX5") :- ahtPossible, not -postMenopausal, nodal(neg), not -lobular(invasive), not ci(tmx).
+possibleAHT("AI5CLO3_TMX5") :- ahtPossible, not -postMenopausal, nodal(neg), not -lobular(invasive), not ci(tmx), adjCTPossible.
+possibleAHT("AI5CLO3_TMX5") :- ahtPossible, not -postMenopausal, nodal(neg), not -lobular(invasive), not ci(tmx), her(neg), naCTPossible.
+
+possibleAHT("AI5_TMX5") :- ahtPossible, not -postMenopausal, nodal(pos), not ci(tmx).
+possibleAHT("AI5CLO3_TMX5") :- ahtPossible, not -postMenopausal, nodal(pos), not ci(tmx).
+
+possibleAHT("TMX10") :- ahtPossible, not -preMenopausal, not ci(tmx).
+possibleAHT("AI5_TMX5") :- ahtPossible, not -preMenopausal, not ci(tmx).
+
+possibleAHT("TMX") :- ahtPossibleTripleNeg, not ci(tmx). % triple neg aht
+possibleAHT("TMX_AI") :- ahtPossibleTripleNeg, not ci(tmx). % triple neg aht
+possibleAHT("TMX_AI_TMX") :- ahtPossibleTripleNeg, not ci(tmx). % triple neg aht
+possibleAHT("AI") :- ahtPossibleTripleNeg. % triple neg aht
+possibleAHT("AI_TMX") :- ahtPossibleTripleNeg, not ci(tmx). % triple neg aht
+
+commendedAHT(AHT) :- possibleAHT(AHT), not ahtCommended.
+
+% commendedAHT(AHT) v alternativeAHTAvailable(AHT) :- possibleAHT(AHT), aht(AHT).
+
+commendedAHT(AHT) :- possibleAHT(AHT), aht(AHT).
+alternativeAHTAvailable(AHT) :- possibleAHT(AHT), aht(AHT).
+
+% :- commendedAHT(X), commendedAHT(Y), X <> Y.
+:- commendedAHT(X), commendedAHT(Y).
+
+
+%%%
+%%% set contraindicated therapies
+%%%
+ctIsCI(X) :- ci(ant), hasANT(X).
+
+%%%
+%%% chemotherapy commendations
+%%%
+
+%% in thesis following rule is shortened to: possibleCTScheme(_), not commendedCT(_)
+commendedCT(X) :- possibleCTScheme(X), not skipCT, not ctCommended, not ctIsCI(X).
+%% in thesis following rule is altered to: commendedCT(X) v -commendedCT(X) :- possibleCTScheme(X)
+
+% commendedCT(X) v alternativeCTAvailable(X) :- possibleCTScheme(X), ctScheme(X).
+commendedCT(X) :- possibleCTScheme(X), ctScheme(X).
+alternativeCTAvailable(X) :- possibleCTScheme(X), ctScheme(X).
+
+%%%
+%%% commendations %%%
+%%%
+ctCommended :- commendedCT(T), ctScheme(T).
+abtCommended :- abtPossible, commendedCT(_).
+opCommended :- opPossible.
+ahtCommended :- commendedAHT(AHT), aht(AHT).
+
+%%%
+%%% restrictions
+%%%
+:- possibleCTScheme(T), not ctScheme(T).
+
+:- skipCT, ctCommended.
+:- commendedCT(T), hasANT(T), ci(ant).
+
+% :- commendedCT(X), commendedCT(Y), X <> Y.
+:- commendedCT(X), commendedCT(Y).
+
+%%%
+%%% contraindication testing - currently only for anthracyclines
+%%%
+hasANT(T) :- &hasAnthracyclines[ctScheme](T).
+
+%%%
+%%% Toxicity
+%%%
+% hasTXCY(TH, TXC) :- &hasToxicity[ctScheme](TXC), ctScheme(TH).
+impairsOrganSystem(TH, SYS) :- &impairsOrganSystem[commendedCT](SYS), commendedCT(TH), organSystem(SYS).
+
+%%%
+%%% calculate  positions
+%%%
+positionStart(1).
+
+% position("CT", T, POS) :- commendedCT(T), thSuggestionsFound, positionStart(POS).
+% position("AHT", AHT, POS) :- not commendedCT(_), commendedAHT(AHT), thSuggestionsFound, positionStart(POS).
+% 
+% position("OP", op, NEXT) :- not abtCommended, opCommended, ctCommended, thSuggestionsFound, commendedCT(T), position("CT", T, POS), NEXT=POS+1.
+% position("OP", op, NEXT) :- abtCommended, opCommended, ctCommended, not commendedAbTPreOP(_), thSuggestionsFound, commendedCT(T), position("CT", T, POS), NEXT=POS+1.
+% position("OP", op, NEXT) :- abtCommended, opCommended, ctCommended, commendedAbTPreOP(AbT), thSuggestionsFound, position("AbT_PRE", AbT, POS), NEXT=POS+1.
+% 
+% position("AbT_PRE", AbT, NEXT) :- abtCommended, ctCommended, commendedAbTPreOP(AbT), thSuggestionsFound, commendedCT(T), position("CT", T, POS), NEXT=POS+1.
+% position("AbT", AbT, NEXT) :- abtCommended, ctCommended, not opCommended, commendedAbT(AbT), thSuggestionsFound, commendedCT(T), position("CT", T, POS), NEXT=POS+1.
+% position("AbT", AbT, NEXT) :- abtCommended, ctCommended, commendedAbT(AbT), thSuggestionsFound, position("OP", op, POS), NEXT=POS+1.
+% 
+% position("AHT", AHT, NEXT) :- ahtCommended, her(neg), naCTPossible, position("OP", op, POS), NEXT=POS+1, commendedAHT(AHT), thSuggestionsFound.
+% position("AHT", AHT, NEXT) :- ahtCommended, her(neg), adjCTPossible, position("CT", CT, POS), commendedCT(CT), NEXT=POS+1, commendedAHT(AHT), thSuggestionsFound.
+% position("AHT", AHT, POS) :- ahtCommended, her(pos), position("AbT", AbT, POS), commendedAbT(AbT), not ahtAfterPTX, commendedAHT(AHT), thSuggestionsFound.
+% position("AHT", AHT, NEXT) :- ahtCommended, her(pos), adjCTPossible, position("AbT", AbT, POS), commendedAbT(AbT), NEXT=POS+1, commendedCT("EC_T"), ageLower70, not -gmc(good), commendedAHT(AHT), thSuggestionsFound.
+% position("AHT", AHT, NEXT) :- ahtCommended, her(pos), adjCTPossible, position("AbT", AbT, POS), commendedAbT(AbT), NEXT=POS+1, commendedCT("EC_T"), nodal(pos), ageHigher70, commendedAHT(AHT), thSuggestionsFound.
+
+
+%%%
+%%% auxiliary predicates/constants for notes
+%%%
+% ahtParallelToAbT :- position("AHT", AHT, POS), ahtCommended, her(pos), position("AbT", AbT, POS), commendedAbT(AbT), not ahtAfterPTX, commendedAHT(AHT).
+% ahtAfterPTX :- position("AHT", AHT, NEXT), ahtCommended, her(pos), adjCTPossible, position("AbT", AbT, POS), commendedAbT(AbT), NEXT=POS+1, commendedCT("EC_T"), ageLower70, not -gmc(good), commendedAHT(AHT).
+% ahtAfterPTX :- position("AHT", AHT, NEXT), ahtCommended, her(pos), adjCTPossible, position("AbT", AbT, POS), commendedAbT(AbT), NEXT=POS+1, commendedCT("EC_T"), nodal(pos), ageHigher70, commendedAHT(AHT).
+
+ctCommendationForANTCI :- possibleCTScheme("TCyclo"), ctPossible, adjCTPossible, nodal(neg), ageHigher70.
+ctCommendationForANTCI :- commendedCT("TH8_8"), ctPossible, naCTPossible, nodal(neg), not -tumorSizeGreaterThan100, not risk(high).
+ctCommendationForANTCI :- commendedCT("TH8_6"), ctPossible, naCTPossible, nodal(neg), not -tumorSizeGreaterThan100, not risk(high).
+
+cptClearingRequiredListed :- commendedCT("EC_TCarbo"), naCTPossible, not -brcaTestAvailable, not -brca(pos), her(neg), epr(neg).
+cptClearingRequiredListed :- commendedCT("PertuTCH"), naCTPossible, nodal(pos), ageLower70, not -gmc(good), ci(ant), her(pos), epr(neg).
+cptClearingRequiredListed :- commendedCT("PertuTCH"), naCTPossible, nodal(pos), ageLower50, ci(ant), her(pos), epr(neg).
+cptClearingRequiredListed :- commendedCT("PertuTCH"), naCTPossible, nodal(pos), ci(ant), her(pos), epr(pos).
+cptClearingRequiredListed :- commendedCT("TCarbo"), naCTPossible, nodal(pos), ci(ant), her(neg).  %%
+
+offLabelButConfirm :- commendedCT("EC_T"), nodal(neg), ageLower70, not -gmc(good), her(pos).
+offLabelButConfirm :- commendedCT("EC_T"), naCTPossible, ageHigher70, her(pos).
+offLabelButConfirm :- commendedCT("EC_T"), naCTPossible, not -gmc(bad), her(pos).
+
+individualCaseDecision :- commendedCT("EC_T"), naCTPossible, ageHigher70.
+individualCaseDecision :- commendedCT("EC_T"), adjCTPossible, nodal(pos), ageHigher70.
+individualCaseDecision :- commendedCT("EC90_600"), adjCTPossible, nodal(neg), ageHigher70.
+individualCaseDecision :- commendedCT("FEC"), ageHigher70.
+individualCaseDecision :- commendedCT("TCyclo"), ageHigher70.
+individualCaseDecision :- commendedCT("TH8_8"), ctPossible, naCTPossible, nodal(neg), ageHigher70, ci(ant), epr(neg), her(pos).
+
+ptxOffLabelUsage :- commendedCT("PertuHT"), ctPossible, naCTPossible, nodal(pos), not -gmc(bad), ci(ant), epr(neg), her(pos), not -risk(high).
+ptxOffLabelUsage :- commendedCT("PertuHT"), naCTPossible, nodal(neg), not -tumorSizeGreaterThan100, not -tumorSizeLowerThan200, her(pos), epr(neg).
+ptxOffLabelUsage :- commendedCT("PertuHT"), naCTPossible, nodal(neg), not -tumorSizeGreaterThan200, not -noFurtherRFs, her(pos), epr(neg).
+ptxOffLabelUsage :- commendedCT("PertuHT"), naCTPossible, nodal(pos), ageHigher70, ci(ant), epr(neg), her(pos), not -risk(high).
+
+cptOffLabelListed :- commendedCT("TCH"), adjCTPossible, nodal(pos), age50to70, ci(ant), her(pos). %% cptOffLabelListed
+cptOffLabelListed :- commendedCT("TCH"), adjCTPossible, nodal(pos), ageLower50, not -gmc(average), ci(ant), her(pos), epr(pos). %% epr pos cptOffLabelListed
+cptOffLabelListed :- commendedCT("TCH"), adjCTPossible, nodal(pos), ageLower50, not -ccKnown, ci(ant), her(pos), epr(pos). %% epr pos cptOffLabelListed
+cptOffLabelListed :- commendedCT("TCH"), naCTPossible, nodal(pos), ageLower50, ci(ant), her(pos), epr(neg), epr(pos). %% Mindmap wasn't clear about ci(ant) epr pos cptOffLabelListed
+
+offLabelListedClearingRequired :- commendedCT("TCH"), naCTPossible, nodal(pos), ageLower70, not -gmc(good), ci(ant), her(pos), epr(neg). %% cptClearingRequiredListed
+offLabelListedClearingRequired :- commendedCT("TCH"), naCTPossible, nodal(pos), ci(ant), her(pos), epr(pos). %% cptClearingRequiredListed
+offLabelListedClearingRequired :- commendedCT("T"), nodal(neg), not -tumorSizeLowerThan100, her(neg), epr(pos), naCTPossible.
+offLabelListedClearingRequired :- commendedCT("T"), nodal(neg), not -tumorSizeLowerThan200, not -noFurtherRFs, her(neg), epr(pos), naCTPossible.
+
+offLabel :- commendedCT("TCH"), adjCTPossible, nodal(neg), ageLower70, not -ccKnown, her(pos), ci(ant). %% offlabel
+offLabel :- commendedCT("TCH"), adjCTPossible, nodal(neg), ageLower70, ci(ant), her(pos). %% offlabel
+offLabel :- commendedCT("TCH"), adjCTPossible, nodal(neg), ageLower70, not -gmc(average), her(pos), ci(ant). %% offlabel
+offLabel :- commendedCT("TCyclo"), nodal(neg).
+offLabel :- commendedCT("TH8_8"), ctPossible, naCTPossible, nodal(neg), not -tumorSizeGreaterThan100, not -tumorSizeLowerThan200, her(pos), epr(neg).
+offLabel :- commendedCT("TH8_8"), ctPossible, naCTPossible, nodal(neg), not -tumorSizeGreaterThan200, not -noFurtherRFs, her(pos), epr(neg).
+offLabel :- commendedCT("TH8_8"), ctPossible, naCTPossible, nodal(neg), not -gmc(bad), ci(ant), epr(neg), her(pos).
+offLabel :- commendedCT("TH8_8"), ctPossible, naCTPossible, nodal(neg), ageHigher70, ci(ant), epr(neg), her(pos).
+
+offLabelClearingRequired :- commendedCT("T"), nodal(neg), not -tumorSizeLowerThan100, her(neg), epr(pos), adjCTPossible.
+offLabelClearingRequired :- commendedCT("T"), nodal(neg), not -tumorSizeLowerThan200, not -noFurtherRFs, her(neg), epr(pos), adjCTPossible.
+offLabelClearingRequired :- commendedCT("T"), nodal(neg), not -tumorSizeLowerThan100, her(neg), epr(neg).
+offLabelClearingRequired :- commendedCT("T"), nodal(neg), not -tumorSizeLowerThan200, not -noFurtherRFs, her(neg), epr(neg).
+offLabelClearingRequired :- commendedCT("EC_T"), nodal(neg), ageLower70, not -gmc(good), her(neg).
+offLabelClearingRequired :- commendedCT("EC_T"), naCTPossible, ageHigher70, her(neg).
+offLabelClearingRequired :- commendedCT("EC_T"), naCTPossible, not -gmc(bad), her(neg).
+
+alternateADJCTPossible :- adjCTPossible, ctCommended, naCTPossible, nodal(pos), ageHigher70, ci(ant), epr(neg), her(pos).
+alternateADJCTPossible :- adjCTPossible, ctCommended, naCTPossible, nodal(pos), not -gmc(bad), ci(ant), epr(neg), her(pos).
+
+thSuggestionsFound :- not emptyTHSuggestions.
+emptyTHSuggestions :- ctPossible, not commendedCT(_).
+emptyTHSuggestions :- ci(ct), not commendedAHT(_).
+emptyTHSuggestions :- ctPossible, not commendedCT(_), not skipCT.
+
+emptyAHTSuggestion :- ahtPossible, not commendedAHT(_).
+
+
+%%%
+%%% notes
+%%%
+note("ANTIHORMONALTHERAPY AFTER END OF PACLITAXEL") :- ahtAfterPTX.
+note("ANTIBODYTHERAPY PARALLEL TO CHEMOTHERAPY AFTER WEEK 4 OF PACLITAXEL") :- abtCommended, commendedCT("EC_T"), not commendedAbTPreOP(_).
+note("FIRST ANTIBODYTHERAPY PARALLEL TO CHEMOTHERAPY AFTER WEEK 4 OF PACLITAXEL") :- abtCommended, commendedCT("EC_T"), commendedAbTPreOP(_).
+note("ANTIBODYTHERAPY PARALLEL TO ANTIHORMONALTHERAPY") :- ahtParallelToAbT.
+note("RECOMMENDED WHERE ANTHRACYCLINES ARE CONTRAINDICATED") :- ctCommendationForANTCI.
+note("INDIVIDUAL CASE DECISION") :- individualCaseDecision.
+
+% note("OFF LABEL BUT CONFIRMED (leitliniengerecht)") :- offLabelButConfirm.
+
+note("OFF LABEL") :- offLabel.
+note("OFF LABEL, CLEARING REQUIRED") :- offLabelClearingRequired.
+note("OFF LABEL, LISTED, CLEARING REQUIRED") :- offLabelListedClearingRequired.
+note("CARBOPLATIN OFF LABEL, CLEARING REQUIRED") :- cptClearingRequired.
+note("ALTERNATE ADJUVANT THERAPY POSSIBLE") :- alternateADJCTPossible.
+note("CARBOPLATIN OFF LABEL, LISTED, CLEARING REQUIRED") :- cptClearingRequiredListed.
+note("CARBOPLATIN OFF LABEL, LISTED") :- cptOffLabelListed.
+note("PACLITAXEL OFF LABEL") :- ptxOffLabelUsage.
+note("START-CYCLE OF TRASTUZUMAB CAN BE OMITTED") :- commendedCT("TCH"), abtCommended.
+
+% note("AI: BEVORZUGT LETROZOL ODER ANASTROZOL BEI WIEDEREINTRETEN DER REGELBLUTUNG + GNRH-ANALOGA (TMX10)") :- commendedAHT("TMX10").
+% note("AI: BEVORZUGT LETROZOL ODER ANASTROZOL BEI WIEDEREINTRETEN DER REGELBLUTUNG + GNRH-ANALOGA (AI5_TMX5)") :- commendedAHT("AI5_TMX5"), not -preMenopausal.
+% note("AI: BEVORZUGT LETROZOL ODER ANASTROZOL (TMX2_AI2_TMX)") :- commendedAHT("TMX2_AI2_TMX").
+% note("AI: BEVORZUGT LETROZOL ODER ANASTROZOL (AI5_EFE)") :- commendedAHT("AI5_EFE").
+% note("AI: BEVORZUGT LETROZOL ODER ANASTROZOL (AI5_TMX5)") :- commendedAHT("AI5_TMX5"), not -postMenopausal.
+% note("AI: BEVORZUGT LETROZOL ODER ANASTROZOL (AI5_TMX5)") :- possibleAHT("AI5CLO3_TMX5"), not -postMenopausal.
+
+%%%
+%%% warnings
+%%%
+ciWarning(TH, "COMMENDED THERAPY CONTAINS ANTHRACYCLINES") :- &hasAnthracyclines[commendedCT](TH).
+
+txcyWarning(TH, SYS, "COMMENDED THERAPY CAN AFFECT DAMAGED ORGAN SYSTEM") :- commendedCT(TH), impairsOrganSystem(TH, SYS), existingCC(SYS), organSystem(SYS).
+
+
+%%%
+%%% errors
+%%%
+error("NO SUITABLE THERAPY SUGGESTION FOUND", emptyTHSuggestions) :- emptyTHSuggestions.
+error("AHT POSSIBLE BUT NO SUITABLE AHT FOUND", emptyAHTSuggestion) :- emptyAHTSuggestion.
+error(VALUE) :- &concat["Missing required fact: ", X](VALUE), missingData(X).
+
+typeError("lndCount must be integer") :- -validLNDCount.
+typeError("tumorSize must be integer") :- -validTumorSize.
+typeError("age must be integer") :- age(_), not validAge.
+
+%%%
+%%% user-friendly output generation
+%%%
+patientPropertyMessage(VALUE) :- &concat["EPR ", X](VALUE), epr(X).
+patientPropertyMessage(VALUE) :- &concat["HER ", X](VALUE), epr(X).
+patientPropertyMessage(VALUE) :- &concat["schedule ", X](VALUE), schedule(X).
+patientPropertyMessage(VALUE) :- &concat["nodal ", X](VALUE), nodal(X).
+patientPropertyMessage(VALUE) :- &concat["age ", X](VALUE), age(X).
+patientPropertyMessage(VALUE) :- &concat["gmc ", X](VALUE), gmc(X).
+patientPropertyMessage(VALUE) :- &concat["tumorSize ", X](VALUE), tumorSize(X).
+patientPropertyMessage(VALUE) :- &concat["risk ", X](VALUE), risk(X).
+patientPropertyMessage(VALUE) :- &concat["lndCount ", X](VALUE), lndCount(X).
+patientPropertyMessage(VALUE) :- &concat["lobular ", X](VALUE), lobular(X).
+patientPropertyMessage(VALUE) :- &concat["ci ", X](VALUE), ci(X).
+patientPropertyMessage(VALUE) :- &concat["-ci ", X](VALUE), -ci(X).
+patientPropertyMessage(VALUE) :- &concat["brca ", X](VALUE), brca(X).
+patientPropertyMessage(VALUE) :- &concat["menopausal ", X](VALUE), menopausal(X).
+patientPropertyMessage(VALUE) :- &concat["existingCC ", X](VALUE), existingCC(X).
+patientPropertyMessage(VALUE) :- &concat["gender ", X](VALUE), gender(X).
+
+%%%
+%%% development settings
+%%% log-atom outputs more information than patient-/therapies-atom
+%%% only for development purposes
+%%%
+environment(development).
+
+log("NOTE", MSG) :- note(MSG), environment(development).
+log("PATIENT", MSG) :- patientPropertyMessage(MSG), environment(development).
+log("TYPEERROR", MSG) :- typeError(MSG), environment(development).
+log("ERROR", MSG) :- error(MSG), environment(development).
+log("TXCYWARNING", MSG) :- &concatAndUpper[TH, " CAN AFFECT DAMAGED ORGAN SYSTEM ", SYS](MSG), txcyWarning(TH, SYS, _), environment(development).
+%%% log("POSITION", MSG) :- &concat[POS, ". ", TH, " (", TYPE, ")"](MSG), position(TYPE, TH, POS), environment(development).
+log("CI-WARNING", MSG) :- &concatAndUpper[TH, " CONTAINS CONTRAINDICATED SUBSTANCES"](MSG), ciWarning(TH, _), environment(development).
+
+%%%
+%%% user-friendly ouput of answer sets
+%%%
+patient(String) :- &getNicePatientPropertyValues[patientPropertyValue](String).
+therapies(String) :- &getNicePatientTherapies[position](String).
